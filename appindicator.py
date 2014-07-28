@@ -1,7 +1,10 @@
 from gi.repository import Gtk, GObject
 from gi.repository import AppIndicator3 as appindicator
 from gi.repository import Pango
-import time
+import bkup
+import os
+
+CONFIGPATH = os.path.join(os.path.expanduser('~'), '.tarsnap.yaml')
 
 class Indicator:
 
@@ -12,6 +15,8 @@ class Indicator:
                             appindicator.IndicatorCategory.APPLICATION_STATUS)
         self.ind.set_status (appindicator.IndicatorStatus.ACTIVE)
         self.ind.set_attention_icon ("indicator-messages-new")
+
+        self.bkup = bkup.Bkup(CONFIGPATH, bkup.Tarsnap())
 
         GObject.timeout_add(100, self.salad)
 

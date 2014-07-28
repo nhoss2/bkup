@@ -2,7 +2,6 @@ import os.path
 import time
 from subprocess import Popen, PIPE
 from yaml import load
-import json
 
 CONFIGPATH = os.path.join(os.path.expanduser('~'), '.tarsnap.yaml')
 
@@ -53,6 +52,9 @@ class Bkup:
             fileSize /= 1024.0
         return "%.2f%s" % (fileSize, 'TB')
 
+    def getPackageNames(self):
+        config = self.getConfig()
+        return config.keys()
 
 
 class Tarsnap:
@@ -82,7 +84,7 @@ class Tarsnap:
 
         return command
 
-
 if __name__ == '__main__':
     b = Bkup(CONFIGPATH, Tarsnap())
-    print b.humanPrint(b.getFileSizeDiff('code'))
+    #print b.humanPrint(b.getFileSizeDiff('code'))
+    print b.getPackageNames()
