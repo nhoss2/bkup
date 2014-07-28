@@ -31,14 +31,27 @@ class Bkup:
             return err
 
     def getFileSizeDiff(self, archiveName):
+        '''
+        return type int if successful
+        otherwise return type str
+        '''
         config = self.getConfig()
         command = self.app.genFileSizeDiff(config[archiveName]) 
         output = self.runCommand(command)
         if type(output) == tuple:
             out, err = output
             newData = int(err[err.rfind(' ') + 1:])
-
             return newData
+        else:
+            return err
+
+    def humanPrint(self, fileSize):
+        for x in ['bytes', 'KB', 'MB', 'GB']:
+            if fileSize < 1024.0:
+                return "%.2f%s" % (fileSize, x)
+
+            fileSize /= 1024.0
+        return "%.2f%s" % (fileSize, 'TB')
 
 
 
@@ -72,4 +85,4 @@ class Tarsnap:
 
 if __name__ == '__main__':
     b = Bkup(CONFIGPATH, Tarsnap())
-    b.getFileSizeDiff('code')
+    print b.humanPrint(b.getFileSizeDiff('code'))

@@ -24,7 +24,6 @@ class Indicator:
         for i in range(3):
             buf = "Test-undermenu - %d" % i
 
-
             if i == 1:
                 print i
                 sep = Gtk.SeparatorMenuItem()
