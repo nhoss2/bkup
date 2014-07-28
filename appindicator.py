@@ -48,16 +48,30 @@ class Indicator:
 
     def menuitem_response(self, w, buf):
         print(buf)
-        dialog = Gtk.Dialog(title="ey", parent=None, flags=0, buttons=(Gtk.STOCK_OK, Gtk.ResponseType.OK, Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL))
-        dialog.set_default_size(500, 500)
+        dialog = Gtk.Dialog(title="ey", parent=None, flags=0, buttons=(Gtk.STOCK_OK, Gtk.ResponseType.OK))
+        dialog.set_default_size(700, 400)
         box = dialog.get_content_area()
+        label = Gtk.Label("There was an error:")
+        label.set_alignment(0, 0.5)
+        label.set_padding(20, 0)
+
         textview = Gtk.TextView()
         fontdesc = Pango.FontDescription("monospace 10")
         textview.modify_font(fontdesc)
+        textview.set_editable(False)
+
+        textbuf = Gtk.TextBuffer()
+        textbuf.set_text("This is the error ey")
+        textview.set_buffer(textbuf)
+
         scroll = Gtk.ScrolledWindow()
-        #scroll.show()
         scroll.add(textview)
-        box.add(scroll)
+        alignment = Gtk.Alignment()
+        alignment.set_padding(0, 10, 20, 20)
+        alignment.add(scroll)
+        box.pack_start(label, expand=False, fill=False, padding=10)
+        box.pack_start(alignment, expand=True, fill=True, padding=0)
+
         box.show_all()
         response = dialog.run()
         dialog.destroy()
