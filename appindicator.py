@@ -18,38 +18,44 @@ class Indicator:
 
         self.bkup = bkup.Bkup(CONFIGPATH, bkup.Tarsnap())
 
-        GObject.timeout_add(100, self.salad)
+        GObject.timeout_add(400, self.salad)
 
         self.iconProgress = 0
 
-        # create a menu
+        # create the menu
         menu = Gtk.Menu()
 
-        # create some 
-        for i in range(3):
-            buf = "Test-undermenu - %d" % i
+        # set a 'title' (disabled menu item)
+        menuItem = Gtk.MenuItem('Packages from bkup.yaml:')
+        menuItem.set_sensitive(False)
+        menu.append(menuItem)
 
-            if i == 1:
-                print i
-                sep = Gtk.SeparatorMenuItem()
-                menu.append(sep)
-                sep.show()
-                check = Gtk.CheckMenuItem('test check item')
-                check.show()
-                self.check = check
-                menu.append(check)
+        # create a menu item for each package
+        for package in self.bkup.getPackageNames():
+            menuItem = Gtk.CheckMenuItem(package)
+            menuItem.set_active(True)
+            menu.append(menuItem)
 
-            menu_items = Gtk.MenuItem(buf)
 
-            menu.append(menu_items)
+        # create the other menu items
+        sep = Gtk.SeparatorMenuItem()
+        menu.append(sep)
 
-            # this is where you would connect your menu item up with a function:
-            menu_items.connect("activate", self.menuitem_response, buf)
+        backupBtn = Gtk.MenuItem('Backup Selected Packages')
+        menu.append(backupBtn)
 
-            # show the items
-            menu_items.show()
+        calculateDiffBtn = Gtk.MenuItem('Calculate File Diffs')
+        menu.append(calculateDiffBtn)
+
+        sep = Gtk.SeparatorMenuItem()
+        menu.append(sep)
+
+        quitBtn = Gtk.MenuItem('Quit')
+        quitBtn.connect("activate", self.closeApp)
+        menu.append(quitBtn)
 
         self.ind.set_menu(menu)
+        menu.show_all()
 
     def menuitem_response(self, w, buf):
         print(buf)
@@ -92,6 +98,9 @@ class Indicator:
         self.ind.set_icon("brasero-disc-" + "%02d" % self.iconProgress)
         #self.ind.set_status(appindicator.IndicatorStatus.PASSIVE)
         return True
+
+    def closeApp(self, menuItem):
+        Gtk.main_quit()
 
 
 if __name__ == "__main__":
