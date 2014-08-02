@@ -45,11 +45,12 @@ class Bkup:
             return err
 
     def humanPrint(self, fileSize):
-        for x in ['bytes', 'KB', 'MB', 'GB']:
-            if fileSize < 1024.0:
+        fileSize /= 1000.0 * 1000.0
+        for x in ['MB', 'GB']:
+            if fileSize < 1000.0:
                 return "%.2f%s" % (fileSize, x)
 
-            fileSize /= 1024.0
+            fileSize /= 1000.0
         return "%.2f%s" % (fileSize, 'TB')
 
     def getPackageNames(self):
