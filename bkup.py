@@ -42,7 +42,22 @@ class Bkup:
             newData = int(err[err.rfind(' ') + 1:])
             return newData
         else:
-            return err
+            return output
+    
+    def backupPackage(self, archiveName):
+        # TODO: handle errors such as incorrect archiveName
+        # TODO: comment on return outputs for these functions
+        config = self.getConfig()
+        name = self.genName(archiveName)
+        command = self.app.genBackupCommand(config[archiveName], name)
+        output = self.runCommand(command)
+        if type(output) == tuple:
+            print 'backed up ' + archiveName
+            return True
+        else:
+            return output
+
+
 
     def humanPrint(self, fileSize):
         fileSize /= 1000.0 * 1000.0
@@ -88,4 +103,3 @@ class Tarsnap:
 if __name__ == '__main__':
     b = Bkup(CONFIGPATH, Tarsnap())
     #print b.humanPrint(b.getFileSizeDiff('code'))
-    print b.getPackageNames()

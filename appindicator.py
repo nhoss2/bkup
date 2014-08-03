@@ -46,6 +46,7 @@ class Indicator:
         menu.append(sep)
 
         backupBtn = Gtk.MenuItem('Backup Selected Packages')
+        backupBtn.connect('activate', self.backupSelected)
         menu.append(backupBtn)
 
         calculateDiffBtn = Gtk.MenuItem('Calculate File Diffs')
@@ -84,6 +85,17 @@ class Indicator:
                 selected.append(package)
 
         return selected
+
+    def backupSelected(self, menuItem):
+        selected = self.getSelectedPackages()
+        for package in selected:
+            output = self.bkup.backupPackage(package)
+            if output != True:
+                print 'error, breaking from backups'
+                print output
+                break
+
+
 
     def calculateDiffs(self, menuItem):
         selected = self.getSelectedPackages()
