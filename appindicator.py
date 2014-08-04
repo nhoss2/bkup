@@ -83,12 +83,12 @@ class Indicator:
             while Gtk.events_pending():
                 Gtk.main_iteration()
 
-            print float(selected.index(package)) / float(len(selected))
             self.updateIcon(float(selected.index(package)) / float(len(selected)))
             output = self.bkup.backupPackage(package)
             if output != True:
                 print 'error, breaking from backups'
                 print output
+                self.createErrorDialog(output)
                 success = False
                 break
 
