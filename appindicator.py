@@ -22,16 +22,13 @@ class Indicator:
 
         self.bkup = bkup.Bkup(CONFIGPATH, bkup.Tarsnap())
 
-        GObject.timeout_add(400, self.salad)
-        self.iconProgress = 0
-
         # create the menu
         menu = Gtk.Menu()
 
         # set a 'title' (disabled menu item)
-        menuItem = Gtk.MenuItem('Packages from bkup.yaml:')
-        menuItem.set_sensitive(False)
-        menu.append(menuItem)
+        self.packageTitle = Gtk.MenuItem('Packages from bkup.yaml:')
+        self.packageTitle.set_sensitive(False)
+        menu.append(self.packageTitle)
 
         # create a menu item for each package
         self.packages = dict()
@@ -41,7 +38,7 @@ class Indicator:
             menuItem.set_active(True)
             menu.append(menuItem)
 
-        # create the other menu items
+        # create the backup and diff calc menu items
         sep = Gtk.SeparatorMenuItem()
         menu.append(sep)
 
@@ -53,6 +50,7 @@ class Indicator:
         calculateDiffBtn.connect('activate', self.calculateDiffs)
         menu.append(calculateDiffBtn)
 
+        # create the quit menu item
         sep = Gtk.SeparatorMenuItem()
         menu.append(sep)
 
@@ -63,20 +61,9 @@ class Indicator:
         self.ind.set_menu(menu)
         menu.show_all()
 
-    def menuitem_response(self, w, buf):
-        print(buf)
-        Gtk.main_quit()
-
-    def salad(self):
-        #print self.check.get_active()
-        if (self.iconProgress == 100):
-            self.iconProgress = 0
-        else:
-            self.iconProgress += 5
-
-        self.ind.set_icon("brasero-disc-" + "%02d" % self.iconProgress)
-        #self.ind.set_status(appindicator.IndicatorStatus.PASSIVE)
-        return True
+    def updateIcon(self, percentage):
+        # percentage is between 0 and 1
+        self.ind.set_icon("brasero-disc-" + "%02d" % int(round(percentage, 1) * 100))
 
     def getSelectedPackages(self):
         selected = []
@@ -87,17 +74,39 @@ class Indicator:
         return selected
 
     def backupSelected(self, menuItem):
+        self.packageTitle.set_label('backing up...')
+        self.setMenuEnabled(False)
+
         selected = self.getSelectedPackages()
+        success = True
         for package in selected:
+            while Gtk.events_pending():
+                Gtk.main_iteration()
+
+            print float(selected.index(package)) / float(len(selected))
+            self.updateIcon(float(selected.index(package)) / float(len(selected)))
             output = self.bkup.backupPackage(package)
             if output != True:
                 print 'error, breaking from backups'
                 print output
+                success = False
                 break
 
+        self.packageTitle.set_label('Packages from bkup.yaml:')
 
+        self.setMenuEnabled(True)
+
+        self.updateIcon(0)
+        
+        if success:
+            msg = Notify.Notification.new('Selected packages backed up', 'Bkup')
+            msg.show()
 
     def calculateDiffs(self, menuItem):
+        self.setMenuEnabled(False)
+        self.packageTitle.set_label('Calculating file diffs...')
+        while Gtk.events_pending():
+            Gtk.main_iteration()
         selected = self.getSelectedPackages()
         for package in selected:
             diff = self.bkup.getFileSizeDiff(package)
@@ -107,23 +116,29 @@ class Indicator:
             print self.packages[package].set_label(newLabel)
 
 
+        self.setMenuEnabled(True)
+        self.packageTitle.set_label('Packages from bkup.yaml:')
         GObject.timeout_add(5 * 60 * 1000, self.removeDiffLabels)
-        msg = Notify.Notification.new('bkup', 'Calculated File Diffs')
+        msg = Notify.Notification.new('Calculated file diffs', 'Bkup')
         msg.show()
+
+    def setMenuEnabled(self, enable):
+        for package in self.packages:
+            self.packages[package].set_sensitive(enable)
+
 
     def removeDiffLabels(self):
         for package in self.packages.keys():
             self.packages[package].set_label(package)
 
-        
     def closeApp(self, menuItem):
         Gtk.main_quit()
 
-    def createErrorDialog(self):
+    def createErrorDialog(self, errorMsg):
         dialog = Gtk.Dialog(title="Bkup Error", parent=None, flags=0, buttons=(Gtk.STOCK_OK, Gtk.ResponseType.OK))
         dialog.set_default_size(700, 400)
         box = dialog.get_content_area()
-        label = Gtk.Label("There was an error:")
+        label = Gtk.Label("There was an error with bkup:")
         label.set_alignment(0, 0.5)
         label.set_padding(20, 0)
 
@@ -133,7 +148,7 @@ class Indicator:
         textview.set_editable(False)
 
         textbuf = Gtk.TextBuffer()
-        textbuf.set_text("This is the error ey")
+        textbuf.set_text(errorMsg)
         textview.set_buffer(textbuf)
 
         scroll = Gtk.ScrolledWindow()
