@@ -3,6 +3,7 @@ from gi.repository import AppIndicator3 as appindicator
 from gi.repository import Pango
 from gi.repository import Notify
 import os
+import time
 import bkup
 
 
@@ -22,6 +23,10 @@ class Indicator:
 
         self.bkup = bkup.Bkup(CONFIGPATH, bkup.Tarsnap())
 
+        # used to check when to remove package file size diff labels
+        # also used to check if file size diffs have been calculated
+        self.removeDiffLabelTime = 0
+
         # create the menu
         menu = Gtk.Menu()
 
@@ -31,6 +36,7 @@ class Indicator:
         menu.append(self.packageTitle)
 
         # create a menu item for each package
+        # also store data about each package in self.packages
         self.packages = dict()
         for package in self.bkup.getPackageNames():
             menuItem = Gtk.CheckMenuItem(package)
@@ -74,6 +80,14 @@ class Indicator:
         return selected
 
     def backupSelected(self, menuItem):
+
+        if self.removeDiffLabelTime == 0:
+            totalDiffs = self.calculateDiffs(None, False)
+            if totalDiffs > 50 * 1000000:
+                msg = Notify.Notification.new('Selected packages total file change is above 50Mb', 'Click backup selected packages again if you want to ignore this')
+                msg.show()
+                return False
+
         self.packageTitle.set_label('backing up...')
         self.setMenuEnabled(False)
 
@@ -84,6 +98,8 @@ class Indicator:
                 Gtk.main_iteration()
 
             self.updateIcon(float(selected.index(package)) / float(len(selected)))
+
+            #TODO: do this in a new thread
             output = self.bkup.backupPackage(package)
             if output != True:
                 print 'error, breaking from backups'
@@ -97,37 +113,55 @@ class Indicator:
         self.setMenuEnabled(True)
 
         self.updateIcon(0)
+
+        self.removeDiffLabels()
         
         if success:
             msg = Notify.Notification.new('Selected packages backed up', 'Bkup')
             msg.show()
 
-    def calculateDiffs(self, menuItem):
+    def calculateDiffs(self, menuItem, showNotification=True):
         self.setMenuEnabled(False)
         self.packageTitle.set_label('Calculating file diffs...')
         while Gtk.events_pending():
             Gtk.main_iteration()
         selected = self.getSelectedPackages()
+
+        totalDiff = 0
+
         for package in selected:
             diff = self.bkup.getFileSizeDiff(package)
+            totalDiff += diff
             print self.bkup.humanPrint(diff)
             humanDiff = self.bkup.humanPrint(diff)
             newLabel = package + ' (' + humanDiff + ' change)'
             print self.packages[package].set_label(newLabel)
 
-
         self.setMenuEnabled(True)
         self.packageTitle.set_label('Packages from bkup.yaml:')
-        GObject.timeout_add(5 * 60 * 1000, self.removeDiffLabels)
-        msg = Notify.Notification.new('Calculated file diffs', 'Bkup')
-        msg.show()
+        self.removeDiffLabelTime = time.time() + 60 * 5
+        GObject.timeout_add(60 * 1000, self.checkDiffLabelRemovalTime)
+
+        if showNotification:
+            msg = Notify.Notification.new('Calculated file diffs', 'Bkup')
+            msg.show()
+
+        return totalDiff
 
     def setMenuEnabled(self, enable):
         for package in self.packages:
             self.packages[package].set_sensitive(enable)
 
+    def checkDiffLabelRemovalTime(self):
+        if self.removeDiffLabelTime < time.time():
+            self.removeDiffLabels()
+            self.removeDiffLabelTime = 0
+            return False
+
+        return True
 
     def removeDiffLabels(self):
+        self.removeDiffLabelTime = 0
         for package in self.packages.keys():
             self.packages[package].set_label(package)
 
