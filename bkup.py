@@ -101,5 +101,6 @@ class Tarsnap:
         return command
 
 if __name__ == '__main__':
+    CONFIGPATH = os.path.join(os.path.expanduser('~'), '.tarsnap.yaml')
     b = Bkup(CONFIGPATH, Tarsnap())
-    #print b.humanPrint(b.getFileSizeDiff('code'))
+

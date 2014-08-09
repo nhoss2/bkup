@@ -4,10 +4,12 @@ from gi.repository import Pango
 from gi.repository import Notify
 import os
 import time
+import json
 import bkup
 
 
 CONFIGPATH = os.path.join(os.path.expanduser('~'), '.tarsnap.yaml')
+LOGFILE = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'bkuplog.json')
 
 class Indicator:
 
@@ -47,14 +49,20 @@ class Indicator:
         # create the backup and diff calc menu items
         sep = Gtk.SeparatorMenuItem()
         menu.append(sep)
+        
+        calculateDiffBtn = Gtk.MenuItem('Calculate File Diffs')
+        calculateDiffBtn.connect('activate', self.calculateDiffs)
+        menu.append(calculateDiffBtn)
 
         backupBtn = Gtk.MenuItem('Backup Selected Packages')
         backupBtn.connect('activate', self.backupSelected)
         menu.append(backupBtn)
 
-        calculateDiffBtn = Gtk.MenuItem('Calculate File Diffs')
-        calculateDiffBtn.connect('activate', self.calculateDiffs)
-        menu.append(calculateDiffBtn)
+        # create the last backup label
+        self.lastBackupLabel = Gtk.MenuItem('Last backup: unkown')
+        self.lastBackupLabel.set_sensitive(False)
+        self.setLastBackupLabel()
+        menu.append(self.lastBackupLabel)
 
         # create the quit menu item
         sep = Gtk.SeparatorMenuItem()
@@ -93,6 +101,8 @@ class Indicator:
 
         selected = self.getSelectedPackages()
         success = True
+
+        packageTimes = []
         for package in selected:
             while Gtk.events_pending():
                 Gtk.main_iteration()
@@ -107,14 +117,16 @@ class Indicator:
                 self.createErrorDialog(output)
                 success = False
                 break
+            else:
+                packageTimes.append({'name': package, 'time': int(time.time())})
 
         self.packageTitle.set_label('Packages from bkup.yaml:')
-
         self.setMenuEnabled(True)
-
         self.updateIcon(0)
-
         self.removeDiffLabels()
+        self.setLastBackupLabel()
+
+        self.updateLog(packageTimes)
         
         if success:
             msg = Notify.Notification.new('Selected packages backed up', 'Bkup')
@@ -148,6 +160,21 @@ class Indicator:
 
         return totalDiff
 
+    def updateLog(self, packageTimes):
+        try:
+            logFile = open(LOGFILE)
+            log = json.loads(logFile.read())
+            logFile.close()
+        except IOError:
+            log = {'packages': {}}
+
+        for package in packageTimes:
+            log['packages'][package['name']] = package['time']
+
+        logFile = open(LOGFILE, 'w')
+        logFile.write(json.dumps(log))
+        logFile.close()
+
     def setMenuEnabled(self, enable):
         for package in self.packages:
             self.packages[package].set_sensitive(enable)
@@ -164,6 +191,25 @@ class Indicator:
         self.removeDiffLabelTime = 0
         for package in self.packages.keys():
             self.packages[package].set_label(package)
+
+    def setLastBackupLabel(self):
+        try:
+            logFile = open(LOGFILE)
+            log = json.loads(logFile.read())
+            logFile.close()
+        except IOError:
+            log = False
+
+        if log == False:
+            self.lastBackupLabel.set_label('Last backup: unkown')
+        else:
+            biggest = 0
+            for packageTime in log['packages'].values():
+                if biggest < packageTime:
+                    biggest = packageTime
+
+            self.lastBackupLabel.set_label('Last: ' + time.ctime(biggest))
+
 
     def closeApp(self, menuItem):
         Gtk.main_quit()
