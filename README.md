@@ -8,3 +8,5 @@ There are three reasons why this was developed over just using cron:
 Currently, the app will automatically not backup if you click on 'backup selected packages' and you didn't click on 'calculate file diffs' *and* the total difference of all the packages being backed up is over 50Mb. In the future this check will be an option and the limit can be changed. To continue with the backup if this happens, just click on 'backup selected packages' again.
 
 The reason for this extra check is to avoid having to check the file differences manually every single time you backup in case one of the packages has something of a large file size you don't intend to backup.
+
+The icon of the app will change to a brighter colour if there has been no backup in the last 24 hours. This 24 hours is hard coded and cannot yet be changed. Maybe in the future with a config file, the time interval can be changed or disabled.
