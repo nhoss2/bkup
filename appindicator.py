@@ -9,7 +9,7 @@ import bkup
 
 
 CONFIGPATH = os.path.join(os.path.expanduser('~'), '.tarsnap.yaml')
-LOGFILE = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'bkuplog.json')
+LOGFILEPATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'bkuplog.json')
 
 class Indicator:
 
@@ -19,7 +19,7 @@ class Indicator:
                             "brasero-disc-00",
                             appindicator.IndicatorCategory.APPLICATION_STATUS)
         self.ind.set_status (appindicator.IndicatorStatus.ACTIVE)
-        self.ind.set_attention_icon ("indicator-messages-new")
+        self.ind.set_attention_icon ("brasero-disc-100")
 
         Notify.init('bkup')
 
@@ -28,6 +28,8 @@ class Indicator:
         # used to check when to remove package file size diff labels
         # also used to check if file size diffs have been calculated
         self.removeDiffLabelTime = 0
+
+        self.logFile = LogFile(LOGFILEPATH)
 
         # create the menu
         menu = Gtk.Menu()
@@ -124,7 +126,6 @@ class Indicator:
         self.setMenuEnabled(True)
         self.updateIcon(0)
         self.removeDiffLabels()
-        self.setLastBackupLabel()
 
         self.updateLog(packageTimes)
         
@@ -161,19 +162,18 @@ class Indicator:
         return totalDiff
 
     def updateLog(self, packageTimes):
-        try:
-            logFile = open(LOGFILE)
-            log = json.loads(logFile.read())
-            logFile.close()
-        except IOError:
+        log = self.logFile.read()
+
+        if log == False:
+            # log file does not exist
             log = {'packages': {}}
 
         for package in packageTimes:
             log['packages'][package['name']] = package['time']
 
-        logFile = open(LOGFILE, 'w')
-        logFile.write(json.dumps(log))
-        logFile.close()
+        self.logFile.write(log)
+
+        self.setLastBackupLabel()
 
     def setMenuEnabled(self, enable):
         for package in self.packages:
@@ -193,12 +193,7 @@ class Indicator:
             self.packages[package].set_label(package)
 
     def setLastBackupLabel(self):
-        try:
-            logFile = open(LOGFILE)
-            log = json.loads(logFile.read())
-            logFile.close()
-        except IOError:
-            log = False
+        log = self.logFile.read()
 
         if log == False:
             self.lastBackupLabel.set_label('Last backup: unkown')
@@ -210,6 +205,10 @@ class Indicator:
 
             self.lastBackupLabel.set_label('Last: ' + time.ctime(biggest))
 
+
+    def checkLastBackupTime(self):
+        pass
+        
 
     def closeApp(self, menuItem):
         Gtk.main_quit()
@@ -243,8 +242,40 @@ class Indicator:
         dialog.run()
         dialog.destroy()
 
+class LogFile:
+
+    def __init__(self, logPath):
+        self.logPath = logPath
+    
+    def read(self):
+        log = True
+
+        try:
+            logFile = open(self.logPath)
+            log = logFile.read()
+            logFile.close()
+        except IOError:
+            log = False
+
+        if log == False:
+            return False
+
+        try:
+            log = json.loads(log)
+        except:
+            print 'hg'
+            log = False
+
+        return log
+
+    def write(self, newLog):
+        logFile = open(self.logPath, 'w')
+        logFile.write(json.dumps(newLog))
+        logFile.close()
+
 
 if __name__ == "__main__":
 
     indicator = Indicator()
+    indicator.ind.set_status(appindicator.IndicatorStatus.ATTENTION)
     Gtk.main()
