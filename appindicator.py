@@ -65,11 +65,24 @@ class Indicator:
         backupBtn.connect('activate', self.backupSelected)
         menu.append(backupBtn)
 
-        # create the last backup label
+        # create the last backup labels and total usage label
+        sep = Gtk.SeparatorMenuItem()
+        menu.append(sep)
+
         self.lastBackupLabel = Gtk.MenuItem('Last backup: unkown')
         self.lastBackupLabel.set_sensitive(False)
         self.setLastBackupLabel()
         menu.append(self.lastBackupLabel)
+
+        self.lastBackupFileSize = Gtk.MenuItem('Last backup size: unkown')
+        self.lastBackupFileSize.set_sensitive(False)
+        self.setLastBackupFileSizeLabel()
+        menu.append(self.lastBackupFileSize)
+
+        self.totalUsageLabel = Gtk.MenuItem('Total Usage: unkown')
+        self.totalUsageLabel.set_sensitive(False)
+        self.setTotalUsageLabel()
+        menu.append(self.totalUsageLabel)
 
         # create the quit menu item
         sep = Gtk.SeparatorMenuItem()
@@ -108,6 +121,8 @@ class Indicator:
         self.backingup = True
         self.updateIconStatus()
 
+        beforeBackupSize = self.bkup.getTotalUsage()
+
         selected = self.getSelectedPackages()
         success = True
 
@@ -135,7 +150,8 @@ class Indicator:
         self.removeDiffLabels()
         self.backingup = False
 
-        self.updateLog(packageTimes)
+        backupSizeDiff = self.bkup.getTotalUsage() - beforeBackupSize
+        self.updateLog(packageTimes, backupSizeDiff)
         
         if success:
             msg = Notify.Notification.new('Selected packages backed up', 'Bkup')
@@ -169,7 +185,7 @@ class Indicator:
 
         return totalDiff
 
-    def updateLog(self, packageTimes):
+    def updateLog(self, packageTimes, backupSize):
         log = self.logFile.read()
 
         if log == False:
@@ -179,9 +195,13 @@ class Indicator:
         for package in packageTimes:
             log['packages'][package['name']] = package['time']
 
+        log['lastBackupFileSize'] = backupSize
+
         self.logFile.write(log)
 
         self.setLastBackupLabel()
+        self.setTotalUsageLabel()
+        self.setLastBackupFileSizeLabel()
         self.updateIconStatus()
 
     def setMenuEnabled(self, enable):
@@ -208,6 +228,21 @@ class Indicator:
             self.lastBackupLabel.set_label('Last: unkown')
         else:
             self.lastBackupLabel.set_label('Last: ' + time.ctime(lastBackupTime))
+
+    def setLastBackupFileSizeLabel(self):
+        log = self.logFile.read()
+        if 'lastBackupFileSize' in log:
+            self.lastBackupFileSize.set_label('Last backup size: ' + self.bkup.humanPrint(log['lastBackupFileSize']))
+        else:
+            self.lastBackupFileSize.set_label('Last backup size: unknown')
+
+    def setTotalUsageLabel(self):
+        totalUsage = self.bkup.getTotalUsage()
+        if type(totalUsage) == int:
+            self.totalUsageLabel.set_label('Total usage: ' + self.bkup.humanPrint(totalUsage))
+        else:
+            self.totalUsageLabel.set_label('Total usage: unknown')
+
 
 
     def updateIconStatus(self):

@@ -57,7 +57,16 @@ class Bkup:
         else:
             return output
 
+    def getTotalUsage(self):
+        command = self.app.genStatsCommand()
+        output = self.runCommand(command)
 
+        if type(output) == tuple:
+            out, err = output
+            stored = int(out[out.rfind(' ') + 1:])
+            return stored
+        else:
+            return output
 
     def humanPrint(self, fileSize):
         fileSize /= 1000.0 * 1000.0
@@ -100,7 +109,11 @@ class Tarsnap:
 
         return command
 
+    def genStatsCommand(self):
+        command = ['tarsnap', '--print-stats']
+
+        return command
+
 if __name__ == '__main__':
     CONFIGPATH = os.path.join(os.path.expanduser('~'), '.tarsnap.yaml')
     b = Bkup(CONFIGPATH, Tarsnap())
-
