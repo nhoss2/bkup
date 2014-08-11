@@ -18,8 +18,8 @@ class Indicator:
                             "Bkup",
                             "brasero-disc-00",
                             appindicator.IndicatorCategory.APPLICATION_STATUS)
-        self.ind.set_status (appindicator.IndicatorStatus.ACTIVE)
-        self.ind.set_attention_icon ("brasero-disc-100")
+        self.ind.set_status(appindicator.IndicatorStatus.ACTIVE)
+        self.ind.set_attention_icon("brasero-disc-100")
 
         Notify.init('bkup')
 
@@ -29,7 +29,12 @@ class Indicator:
         # also used to check if file size diffs have been calculated
         self.removeDiffLabelTime = 0
 
+        # used to check if backing up is in progress
+        self.backingup = False
+
         self.logFile = LogFile(LOGFILEPATH)
+
+        GObject.timeout_add(60 * 1000, self.updateIconStatus)
 
         # create the menu
         menu = Gtk.Menu()
@@ -100,6 +105,8 @@ class Indicator:
 
         self.packageTitle.set_label('backing up...')
         self.setMenuEnabled(False)
+        self.backingup = True
+        self.updateIconStatus()
 
         selected = self.getSelectedPackages()
         success = True
@@ -126,6 +133,7 @@ class Indicator:
         self.setMenuEnabled(True)
         self.updateIcon(0)
         self.removeDiffLabels()
+        self.backingup = False
 
         self.updateLog(packageTimes)
         
@@ -174,6 +182,7 @@ class Indicator:
         self.logFile.write(log)
 
         self.setLastBackupLabel()
+        self.updateIconStatus()
 
     def setMenuEnabled(self, enable):
         for package in self.packages:
@@ -193,21 +202,38 @@ class Indicator:
             self.packages[package].set_label(package)
 
     def setLastBackupLabel(self):
-        log = self.logFile.read()
+        lastBackupTime = self.logFile.getLastBackupTime()
 
-        if log == False:
-            self.lastBackupLabel.set_label('Last backup: unkown')
+        if lastBackupTime == False:
+            self.lastBackupLabel.set_label('Last: unkown')
         else:
-            biggest = 0
-            for packageTime in log['packages'].values():
-                if biggest < packageTime:
-                    biggest = packageTime
-
-            self.lastBackupLabel.set_label('Last: ' + time.ctime(biggest))
+            self.lastBackupLabel.set_label('Last: ' + time.ctime(lastBackupTime))
 
 
-    def checkLastBackupTime(self):
-        pass
+    def updateIconStatus(self):
+        # this function changes the icon status if there has been no backup
+        # done within the last 24 hours. This 24 hours is a constant which will
+        # be optionally disabled or changed from a config file in the future.
+
+        # this is the only function that should be changing the icon status
+
+        if self.backingup:
+            # while backing up, the icon status is active
+            self.ind.set_status(appindicator.IndicatorStatus.ACTIVE)
+            return
+
+        lastBackupTime = self.logFile.getLastBackupTime()
+        remindConstant = 60 * 60 * 24 # 24 hours in seconds
+
+        if lastBackupTime == False:
+            return self.ind.set_status(appindicator.IndicatorStatus.ATTENTION)
+
+        if lastBackupTime + remindConstant > int(time.time()):
+            self.ind.set_status(appindicator.IndicatorStatus.ACTIVE)
+        else:
+            self.ind.set_status(appindicator.IndicatorStatus.ATTENTION)
+
+        return True
         
 
     def closeApp(self, menuItem):
@@ -269,13 +295,27 @@ class LogFile:
         return log
 
     def write(self, newLog):
+        # newLog should be of type dict as it gets converted to str in this function
         logFile = open(self.logPath, 'w')
         logFile.write(json.dumps(newLog))
         logFile.close()
+
+    def getLastBackupTime(self):
+        log = self.read()
+
+        if log == False:
+            return False
+
+        biggest = 0
+        for packageTime in log['packages'].values():
+            if biggest < packageTime:
+                biggest = packageTime
+
+        return biggest
+
 
 
 if __name__ == "__main__":
 
     indicator = Indicator()
-    indicator.ind.set_status(appindicator.IndicatorStatus.ATTENTION)
     Gtk.main()
