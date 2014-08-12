@@ -3,8 +3,6 @@ import time
 from subprocess import Popen, PIPE
 from yaml import load
 
-CONFIGPATH = os.path.join(os.path.expanduser('~'), '.tarsnap.yaml')
-
 class Bkup:
 
     def __init__(self, configPath, backupApp):
@@ -52,7 +50,6 @@ class Bkup:
         command = self.app.genBackupCommand(config[archiveName], name)
         output = self.runCommand(command)
         if type(output) == tuple:
-            print 'backed up ' + archiveName
             return True
         else:
             return output
@@ -115,5 +112,5 @@ class Tarsnap:
         return command
 
 if __name__ == '__main__':
-    CONFIGPATH = os.path.join(os.path.expanduser('~'), '.tarsnap.yaml')
+    CONFIGPATH = os.path.join(os.path.expanduser('~'), '.bkup.yaml')
     b = Bkup(CONFIGPATH, Tarsnap())

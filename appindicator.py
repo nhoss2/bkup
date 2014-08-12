@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+
 from gi.repository import Gtk, GObject
 from gi.repository import AppIndicator3 as appindicator
 from gi.repository import Pango
@@ -8,7 +10,7 @@ import json
 import bkup
 
 
-CONFIGPATH = os.path.join(os.path.expanduser('~'), '.tarsnap.yaml')
+CONFIGPATH = os.path.join(os.path.expanduser('~'), '.bkup.yaml')
 LOGFILEPATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'bkuplog.json')
 
 class Indicator:
@@ -136,8 +138,8 @@ class Indicator:
             #TODO: do this in a new thread
             output = self.bkup.backupPackage(package)
             if output != True:
-                print 'error, breaking from backups'
-                print output
+                print('error, breaking from backups')
+                print(output)
                 self.createErrorDialog(output)
                 success = False
                 break
@@ -169,10 +171,10 @@ class Indicator:
         for package in selected:
             diff = self.bkup.getFileSizeDiff(package)
             totalDiff += diff
-            print self.bkup.humanPrint(diff)
+            print(self.bkup.humanPrint(diff))
             humanDiff = self.bkup.humanPrint(diff)
             newLabel = package + ' (' + humanDiff + ' change)'
-            print self.packages[package].set_label(newLabel)
+            print(self.packages[package].set_label(newLabel))
 
         self.setMenuEnabled(True)
         self.packageTitle.set_label('Packages from bkup.yaml:')
@@ -324,7 +326,6 @@ class LogFile:
         try:
             log = json.loads(log)
         except:
-            print 'hg'
             log = False
 
         return log
