@@ -233,7 +233,8 @@ class Indicator:
 
     def setLastBackupFileSizeLabel(self):
         log = self.logFile.read()
-        if 'lastBackupFileSize' in log:
+
+        if type(log) == dict and 'lastBackupFileSize' in log:
             self.lastBackupFileSize.set_label('Last backup size: ' + self.bkup.humanPrint(log['lastBackupFileSize']))
         else:
             self.lastBackupFileSize.set_label('Last backup size: unknown')
@@ -244,7 +245,6 @@ class Indicator:
             self.totalUsageLabel.set_label('Total usage: ' + self.bkup.humanPrint(totalUsage))
         else:
             self.totalUsageLabel.set_label('Total usage: unknown')
-
 
 
     def updateIconStatus(self):
