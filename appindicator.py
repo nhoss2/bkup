@@ -197,7 +197,8 @@ class Indicator:
         for package in packageTimes:
             log['packages'][package['name']] = package['time']
 
-        log['lastBackupFileSize'] = backupSize
+        if backupSize > 0:
+            log['lastBackupFileSize'] = backupSize
 
         self.logFile.write(log)
 
