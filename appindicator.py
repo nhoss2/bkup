@@ -258,7 +258,7 @@ class Indicator:
         if self.backingup:
             # while backing up, the icon status is active
             self.ind.set_status(appindicator.IndicatorStatus.ACTIVE)
-            return
+            return True
 
         lastBackupTime = self.logFile.getLastBackupTime()
         remindConstant = 60 * 60 * 24 # 24 hours in seconds
