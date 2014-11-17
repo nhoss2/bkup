@@ -3,6 +3,8 @@ Bkup
 
 An ubuntu app indicator for tarsnap backups. Works by defining 'packages' of paths to backup which you can then manually select to have backed up.
 
+![](https://nhoss2.github.io/bkup/screenshot.png)
+
 Installation
 ------------
 
