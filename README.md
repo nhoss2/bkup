@@ -3,12 +3,12 @@ Bkup
 
 An ubuntu app indicator for tarsnap backups. Works by defining 'packages' of paths to backup which you can then manually select to have backed up.
 
-installation
+Installation
 ------------
 
 This isn't ready for use yet. If you want to try it out though, clone this repo, create a `~/.bkup.yaml` file and run `python appindicator.py`. You need to have tarsnap installed and set up.
 
-example .bkup.yaml
+Example .bkup.yaml
 -----------------
 
 .bkup.yaml needs to be in your home directory
@@ -34,7 +34,7 @@ example .bkup.yaml
         - /home/nafis/code/chromium-clone
 
 
-motivations
+Motivations
 -----------
 
 There are three reasons why this was developed over just using something like cron:
@@ -46,7 +46,7 @@ There are three reasons why this was developed over just using something like cr
   - Sometimes backing up can take some time to run so I need to be in a place that I wont need to move from while backing up.
 
 
-things to note
+Things to note
 --------------
 
   - Currently, the app will automatically not backup if you click on `backup selected packages` and you didn't click on `calculate file diffs` **and** the total difference of all the packages being backed up is over 50Mb. In the future this check will be an option and the limit can be changed. To continue with the backup if this happens, just click on 'backup selected packages' again.
@@ -58,7 +58,7 @@ things to note
   - Each package backed up will be in the format: `packageName:yyyy-m-d#unixtime`. eg: `nuclearplans:2014-8-4#1407148246`. So don't have `:` or `#` in your package names.
 
 
-roadmap
+Roadmap
 -------
 
   - View details about each package backed up
@@ -66,7 +66,7 @@ roadmap
   - Duplicity support
 
 
-licence
+Licence
 -------
 
 The MIT License (MIT)
