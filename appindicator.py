@@ -34,6 +34,9 @@ class Indicator:
         # used to check if backing up is in progress
         self.backingup = False
 
+        # used to store number of archives that are older than 30 days
+        self.numOldArchives = False
+
         self.logFile = LogFile(LOGFILEPATH)
 
         GObject.timeout_add(60 * 1000, self.updateIconStatus)
@@ -67,7 +70,15 @@ class Indicator:
         backupBtn.connect('activate', self.backupSelected)
         menu.append(backupBtn)
 
-        # create the last backup labels and total usage label
+        # create old archive checking and deleting buttons
+        sep = Gtk.SeparatorMenuItem()
+        menu.append(sep)
+
+        calculateOldBtn = Gtk.MenuItem('Check Number Of Old Archives')
+        calculateOldBtn.connect('activate', self.checkOldArchives)
+        menu.append(calculateOldBtn)
+
+        # create unsensitive labels for stats
         sep = Gtk.SeparatorMenuItem()
         menu.append(sep)
 
@@ -85,6 +96,11 @@ class Indicator:
         self.totalUsageLabel.set_sensitive(False)
         self.setTotalUsageLabel()
         menu.append(self.totalUsageLabel)
+
+        self.oldArchivesLabel = Gtk.MenuItem('Archives > 30 days old: unknown')
+        self.oldArchivesLabel.set_sensitive(False)
+        self.setOldArchivesLabel()
+        menu.append(self.oldArchivesLabel)
 
         # create the quit menu item
         sep = Gtk.SeparatorMenuItem()
@@ -187,6 +203,22 @@ class Indicator:
 
         return totalDiff
 
+    def checkOldArchives(self, menuItem, showNotification=True):
+        if showNotification:
+            msg = Notify.Notification.new('recalculating number of archives older than 30 days', 'Bkup')
+            msg.show()
+
+        # TODO: do this in new thread so the user can click other buttons while
+        # this is running. Or disable other buttons
+        self.oldArchives = self.bkup.filterOld(30)
+        self.numOldArchives = len(self.oldArchives)
+
+        self.setOldArchivesLabel()
+
+        return self.oldArchives
+
+
+
     def updateLog(self, packageTimes, backupSize):
         log = self.logFile.read()
 
@@ -246,6 +278,14 @@ class Indicator:
             self.totalUsageLabel.set_label('Total usage: ' + self.bkup.humanPrint(totalUsage))
         else:
             self.totalUsageLabel.set_label('Total usage: unknown')
+    
+    def setOldArchivesLabel(self):
+        print self.numOldArchives
+        if self.numOldArchives == False:
+            self.oldArchivesLabel.set_label('Archives older than 30 days: '
+                                            + str(self.numOldArchives))
+        else:
+            self.oldArchivesLabel.set_label('Archives > 30 days old: unknown')
 
 
     def updateIconStatus(self):
