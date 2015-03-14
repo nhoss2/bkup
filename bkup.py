@@ -13,6 +13,13 @@ class Bkup:
         date = time.localtime()
         return name + ':' + str(date.tm_year) + '-' + str(date.tm_mon) + '-' + str(date.tm_mday) + '#' + str(int(time.time()))
 
+    def parseName(self, name):
+        return {
+            'package': name.split(':')[0],
+            'time': float(name.split('#')[1]),
+            'original': name
+        }
+
     def getConfig(self):
         f = open(self.configPath)
         config = load(f.read())
@@ -78,6 +85,32 @@ class Bkup:
         config = self.getConfig()
         return config.keys()
 
+    def getArchives(self):
+        command = self.app.genArchivesCommand()
+        output = self.runCommand(command)
+        
+        if type(output) == tuple:
+            out, err = output
+            archiveList = out.split('\n')
+            if archiveList[-1] == '' and len(archiveList) > 0:
+                return archiveList[:-1]
+            else:
+                return archiveList
+        else:
+            return []
+    
+    '''
+    returns array of archive names that are older than the days given
+    '''
+    def filterOld(self, days):
+        oldTime = time.time() - 60 * 60 * 24 * days
+        oldArchives = []
+        for archiveName in self.getArchives():
+            archive = self.parseName(archiveName)
+            if archive['time'] < oldTime:
+                oldArchives.append(archiveName)
+
+        return oldArchives
 
 class Tarsnap:
 
@@ -108,6 +141,11 @@ class Tarsnap:
 
     def genStatsCommand(self):
         command = ['tarsnap', '--print-stats']
+
+        return command
+    
+    def genArchivesCommand(self):
+        command = ['tarsnap', '--list-archives']
 
         return command
 
