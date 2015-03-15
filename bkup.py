@@ -61,6 +61,14 @@ class Bkup:
         else:
             return output
 
+    def deleteArchives(self, archives):
+        command = self.app.genDeleteCommand(archives)
+        output = self.runCommand(command)
+        if type(output) == tuple:
+            return True
+        else:
+            return output
+
     def getTotalUsage(self):
         command = self.app.genStatsCommand()
         output = self.runCommand(command)
@@ -146,6 +154,17 @@ class Tarsnap:
     
     def genArchivesCommand(self):
         command = ['tarsnap', '--list-archives']
+
+        return command
+
+    def genDeleteCommand(self, archive):
+        command = ['tarsnap', '-d']
+
+        if type(archive) == list:
+            for archiveName in archive:
+                command += ['-f', archiveName]
+        else:
+            command += ['-f', archive]
 
         return command
 

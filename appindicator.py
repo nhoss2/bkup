@@ -35,7 +35,8 @@ class Indicator:
         self.backingup = False
 
         # used to store number of archives that are older than 30 days
-        self.numOldArchives = False
+        # a value of -1 means the number of archives have not been counted
+        self.numOldArchives = -1
 
         self.logFile = LogFile(LOGFILEPATH)
 
@@ -77,6 +78,10 @@ class Indicator:
         calculateOldBtn = Gtk.MenuItem('Check Number Of Old Archives')
         calculateOldBtn.connect('activate', self.checkOldArchives)
         menu.append(calculateOldBtn)
+
+        deleteOldBtn = Gtk.MenuItem('Delete archives > 30 days old')
+        deleteOldBtn.connect('activate', self.deleteOldArchives)
+        menu.append(deleteOldBtn)
 
         # create unsensitive labels for stats
         sep = Gtk.SeparatorMenuItem()
@@ -217,7 +222,28 @@ class Indicator:
 
         return self.oldArchives
 
+    def deleteOldArchives(self, menuItem):
+        if self.numOldArchives > 0:
+            msg = Notify.Notification.new('Deleting ' + str(self.numOldArchives)
+            + ' archives', 'Bkup')
+            msg.show()
+            output = self.bkup.deleteArchives(self.oldArchives)
+            if output == True:
+                msg = Notify.Notification.new('Deleted ' + str(self.numOldArchives)
+                + ' archives', 'Bkup')
+                msg.show()
+                self.numOldArchives = 0
+            else:
+                self.createErrorDialog(output)
+                self.numOldArchives = -1
 
+            setOldArchivesLabel()
+        elif self.numOldArchives == 0:
+            msg = Notify.Notification.new('No archives older than 30 days', 'Bkup')
+            msg.show()
+        else:
+            self.createErrorDialog('To delete old archives, '
+            + 'it is first required to check number of old archives')
 
     def updateLog(self, packageTimes, backupSize):
         log = self.logFile.read()
@@ -280,8 +306,7 @@ class Indicator:
             self.totalUsageLabel.set_label('Total usage: unknown')
     
     def setOldArchivesLabel(self):
-        print self.numOldArchives
-        if self.numOldArchives == False:
+        if self.numOldArchives != -1:
             self.oldArchivesLabel.set_label('Archives older than 30 days: '
                                             + str(self.numOldArchives))
         else:
