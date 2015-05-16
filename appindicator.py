@@ -218,6 +218,12 @@ class Indicator:
         self.oldArchives = self.bkup.filterOld(30)
         self.numOldArchives = len(self.oldArchives)
 
+        if showNotification:
+            msg = Notify.Notification.new('Number of archives older than 30 days: ' 
+                                          + str(self.numOldArchives))
+            msg.show()
+
+
         self.setOldArchivesLabel()
 
         return self.oldArchives
